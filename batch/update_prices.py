@@ -209,7 +209,9 @@ def main():
 
     db = None
     if not args.dry_run:
-        url, key = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        # 붙여넣을 때 딸려 온 공백·줄바꿈 제거
+        url = (os.environ.get("SUPABASE_URL") or "").strip()
+        key = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
         if not url or not key:
             sys.exit("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다.")
         db = DB(url, key)

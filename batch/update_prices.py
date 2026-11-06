@@ -209,9 +209,15 @@ def main():
 
     db = None
     if not args.dry_run:
-        # 붙여넣을 때 딸려 온 공백·줄바꿈 제거
-        url = (os.environ.get("SUPABASE_URL") or "").strip()
-        key = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+        # 붙여넣을 때 딸려 온 공백·줄바꿈 제거 (키·주소에는 원래 공백이 없음)
+        url = "".join((os.environ.get("SUPABASE_URL") or "").split())
+        raw_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or ""
+        key = "".join(raw_key.split())
+        kind = "JWT(service_role)" if key.startswith("eyJ") else "sb_secret" if key.startswith("sb_secret_") else "알 수 없는 형식"
+        print(f"[설정] 주소 {url[:8]}… / 키 형식 {kind}, 길이 {len(key)}"
+              + (f", 공백 {len(raw_key) - len(key)}자 제거" if len(raw_key) != len(key) else ""))
+        if not url.startswith("https://") or not key.isascii():
+            sys.exit("SUPABASE_URL 또는 키 값이 올바르지 않습니다. GitHub Secrets를 다시 확인하세요.")
         if not url or not key:
             sys.exit("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다.")
         db = DB(url, key)

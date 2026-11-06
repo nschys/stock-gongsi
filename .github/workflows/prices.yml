@@ -1,0 +1,22 @@
+name: 종가 업데이트
+
+on:
+  schedule:
+    - cron: "30 7 * * 1-5"   # 16:30 KST, 국내장 마감 후
+    - cron: "0 22 * * 1-5"   # 07:00 KST, 미국장 마감 후 (서머타임 무관하게 마감 지남)
+  workflow_dispatch: {}       # Actions 탭에서 수동 실행
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 종목 목록 + 종가 수집
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python batch/update_prices.py

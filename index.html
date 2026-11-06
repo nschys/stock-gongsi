@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>매매공시방</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="top-title">
+      <strong id="roomName">매매공시방</strong>
+      <span id="demoBadge" class="badge" hidden>데모</span>
+    </div>
+    <div class="top-actions">
+      <button id="nickBtn" class="ghost" type="button"></button>
+      <button id="inviteBtn" class="ghost" type="button">초대 링크</button>
+    </div>
+  </header>
+
+  <main id="feed" class="feed" aria-live="polite">
+    <p class="empty" id="emptyMsg" hidden>아직 공시가 없어요. 첫 매매를 공시해 보세요.</p>
+  </main>
+
+  <form id="composer" class="composer" autocomplete="off">
+    <div class="row">
+      <div class="seg" role="radiogroup" aria-label="시장">
+        <button type="button" data-market="KR" class="on">🇰🇷 국내</button>
+        <button type="button" data-market="US">🇺🇸 미국</button>
+      </div>
+      <div class="search">
+        <input id="symbolInput" placeholder="종목명 또는 코드" aria-label="종목" />
+        <ul id="suggest" class="suggest" hidden></ul>
+      </div>
+    </div>
+    <div class="row">
+      <div class="seg side" role="radiogroup" aria-label="매수 매도">
+        <button type="button" data-side="BUY" class="on buy">매수</button>
+        <button type="button" data-side="SELL" class="sell">매도</button>
+      </div>
+      <input id="priceInput" inputmode="decimal" placeholder="단가" aria-label="단가" />
+      <input id="qtyInput" inputmode="decimal" placeholder="수량" aria-label="수량" />
+      <button id="submitBtn" class="primary" type="submit">공시</button>
+    </div>
+    <p id="formMsg" class="form-msg" hidden></p>
+  </form>
+
+  <dialog id="nickDialog">
+    <form method="dialog" id="nickForm">
+      <h2>닉네임</h2>
+      <p class="muted">방에 표시될 이름이에요. 나중에 바꿀 수 있어요.</p>
+      <input id="nickInput" maxlength="20" required placeholder="예: 존버왕" />
+      <button class="primary" type="submit">입장</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="fatal" class="fatal" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="backend.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

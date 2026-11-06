@@ -4,6 +4,21 @@
 //   searchSymbols(market, q), createPost(p), deletePost(id),
 //   toggleReaction(postId, kind, on), subscribe(onChange)
 
+// 검색 순위: 코드 일치 > 이름 일치 > 이름 앞부분 > 코드 앞부분 > 이름 포함. 같으면 ETF보다 주식, 짧은 이름 먼저
+function rankSymbols(rows, q) {
+  const Q = q.toUpperCase();
+  const score = (r) => {
+    const sym = r.symbol.toUpperCase(), name = r.name.toUpperCase();
+    if (sym === Q) return 0;
+    if (name === Q) return 1;
+    if (name.startsWith(Q)) return 2;
+    if (sym.startsWith(Q)) return 3;
+    return 4;
+  };
+  const etf = (r) => (r.exchange === "ETF" || /\bETF\b/i.test(r.name) ? 1 : 0);
+  return rows.sort((a, b) => score(a) - score(b) || etf(a) - etf(b) || a.name.length - b.name.length);
+}
+
 function makeSupabaseBackend(cfg) {
   const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
     auth: { persistSession: true, storageKey: "gongsi-auth" },
@@ -64,12 +79,18 @@ function makeSupabaseBackend(cfg) {
     },
 
     async searchSymbols(market, q) {
-      q = q.replace(/[%,()]/g, "").trim();
+      q = q.replace(/[%,()*]/g, "").trim();
       if (!q) return [];
-      return must(await sb.from("symbols").select("market,symbol,name,exchange")
-        .eq("market", market)
-        .or(`name.ilike.%${q}%,symbol.ilike.${q}%`)
-        .order("name").limit(8));
+      // 코드 앞부분 / 이름 앞부분 / 이름 포함을 따로 받아서 합친 뒤 순위를 매김
+      const base = () => sb.from("symbols").select("market,symbol,name,exchange").eq("market", market);
+      const [bySym, byPrefix, byContains] = await Promise.all([
+        base().ilike("symbol", `${q}%`).order("symbol").limit(10),
+        base().ilike("name", `${q}%`).order("name").limit(15),
+        base().ilike("name", `%${q}%`).order("name").limit(30),
+      ]);
+      const seen = new Map();
+      for (const r of [bySym, byPrefix, byContains]) for (const row of must(r)) seen.set(row.symbol, row);
+      return rankSymbols([...seen.values()], q).slice(0, 8);
     },
 
     async createPost(p) {
@@ -158,8 +179,8 @@ function makeDemoBackend() {
     async searchSymbols(market, q) {
       q = q.trim().toLowerCase();
       if (!q) return [];
-      return SYMBOLS.filter((s) => s.market === market &&
-        (s.name.toLowerCase().includes(q) || s.symbol.toLowerCase().startsWith(q))).slice(0, 8);
+      return rankSymbols(SYMBOLS.filter((s) => s.market === market &&
+        (s.name.toLowerCase().includes(q) || s.symbol.toLowerCase().startsWith(q))), q).slice(0, 8);
     },
     async createPost(p) {
       posts.push({ ...p, id: ++seq, user_id: "me", nickname: me.nickname, created_at: new Date().toISOString() });

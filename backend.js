@@ -15,7 +15,7 @@ function rankSymbols(rows, q) {
     if (sym.startsWith(Q)) return 3;
     return 4;
   };
-  const etf = (r) => (r.exchange === "ETF" || /\bETF\b/i.test(r.name) ? 1 : 0);
+  const etf = (r) => (r.exchange === "ETF" || r.exchange === "ETN" || /\bET[FN]\b/i.test(r.name) ? 1 : 0);
   return rows.sort((a, b) => score(a) - score(b) || etf(a) - etf(b) || a.name.length - b.name.length);
 }
 

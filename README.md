@@ -6,7 +6,7 @@
 - 화면: `index.html` + `app.js` + `backend.js` + `style.css` (빌드 없음, 정적 파일)
 - DB·실시간·익명 로그인: Supabase 무료 플랜 (`supabase/schema.sql`)
 - 종목 목록·종가: `batch/update_prices.py`를 GitHub Actions가 평일 하루 2번 실행
-  - 국내 주식: 한국거래소 KIND / 국내 ETF: 네이버 금융 / 미국: 나스닥 트레이더 공식 목록
+  - 국내: 네이버 증권 시가총액 목록(우선주·ETF·ETN 포함) + 한국거래소 KIND(공식 회사명·코넥스) / 미국: 나스닥 트레이더 공식 목록
   - 종가: Yahoo Finance 차트 데이터 (키 없음, 비공식이라 막히면 소스 교체 필요)
 
 ## 손익 계산 방식

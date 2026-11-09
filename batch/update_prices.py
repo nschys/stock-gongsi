@@ -68,16 +68,29 @@ def fetch_kr_stocks() -> list[dict]:
     return rows
 
 
-def fetch_kr_etfs() -> list[dict]:
-    """국내 ETF 목록 (네이버 금융)."""
-    raw = http_get("https://finance.naver.com/api/sise/etfItemList.nhn")
-    try:
-        data = json.loads(raw.decode("utf-8"))
-    except UnicodeDecodeError:
-        data = json.loads(raw.decode("euc-kr"))
-    return [{"market": "KR", "symbol": it["itemcode"], "name": it["itemname"],
-             "exchange": "ETF", "yahoo": it["itemcode"] + ".KS"}
-            for it in data["result"]["etfItemList"]]
+NAVER_TYPE = {"etf": "ETF", "etn": "ETN"}
+
+
+def fetch_kr_naver() -> list[dict]:
+    """네이버 증권 시가총액 목록 전체. KIND에 없는 우선주·ETF·ETN이 들어 있음."""
+    rows = []
+    for market, suffix in [("KOSPI", ".KS"), ("KOSDAQ", ".KQ")]:
+        page = 1
+        while page <= 60:
+            url = f"https://m.stock.naver.com/api/stocks/marketValue/{market}?page={page}&pageSize=100"
+            stocks = json.loads(http_get(url).decode("utf-8")).get("stocks") or []
+            for s in stocks:
+                code = s.get("itemCode", "")
+                if not re.fullmatch(r"[0-9A-Z]{6}", code):
+                    continue
+                rows.append({"market": "KR", "symbol": code, "name": s["stockName"][:80],
+                             "exchange": NAVER_TYPE.get(s.get("stockEndType"), market),
+                             "yahoo": code + suffix})
+            if len(stocks) < 100:
+                break
+            page += 1
+            time.sleep(0.15)
+    return rows
 
 
 US_EXCHANGE = {"A": "NYSE American", "N": "NYSE", "P": "NYSE Arca", "Z": "Cboe", "V": "IEX"}
@@ -226,7 +239,8 @@ def main():
     yahoo_map: dict[tuple[str, str], str] = {}
     if not args.no_symbols:
         all_syms: dict[tuple[str, str], dict] = {}
-        for name, fn in [("국내 주식", fetch_kr_stocks), ("국내 ETF", fetch_kr_etfs), ("미국", fetch_us)]:
+        # 뒤에 오는 소스가 같은 종목을 덮어씀: 네이버(우선주·ETF·ETN 포함) → KIND(공식 회사명, 코넥스)
+        for name, fn in [("국내 전체(네이버)", fetch_kr_naver), ("국내 주식(KIND)", fetch_kr_stocks), ("미국", fetch_us)]:
             try:
                 rows = fn()
                 print(f"[종목] {name}: {len(rows):,}개")
